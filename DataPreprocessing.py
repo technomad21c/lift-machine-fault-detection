@@ -1,4 +1,5 @@
 import csv
+import math
 
 class DataPreprocessing():
     def __init__(self, db):
@@ -10,7 +11,7 @@ class DataPreprocessing():
             }
         }
 
-    def retrieve(self):
+    def run(self):
         healthy_data_index = [
             {
                 'location': 'motorfan',
@@ -77,9 +78,9 @@ class DataPreprocessing():
             }
         ]
 
-        with open('faulty_data.csv', 'w', newline='') as csvfile:
+        with open('data.csv', 'w', newline='') as csvfile:
             writer = csv.writer(csvfile, delimiter=',')
-            writer.writerow(['location', 'rms_y', 'average'])
+            writer.writerow(['location', 'rms_y', 'average', 'standard deviation', 'variance'])
             for d in faulty_data_index:
                 query = 'select * from faulty_data where'
                 query += ' sensor_id=\'' + d['sensor_id'] + '\' and'
@@ -87,11 +88,8 @@ class DataPreprocessing():
                 query += ' sensed_time > \'' + d['start'] + '\' and'
                 query += ' sensed_time < \'' + d['end'] + '\''
                 result = self.execute(query)
-                self.write_csv(result, writer)
+                self.write_csv(result, writer, 1)
 
-        with open('healthy_data.csv', 'w', newline='') as csvfile:
-            writer = csv.writer(csvfile, delimiter=',')
-            writer.writerow(['location', 'rms_y', 'average'])
             for d in healthy_data_index:
                 query = 'select * from healthy_data where'
                 query += ' sensor_id=\'' + d['sensor_id'] + '\' and'
@@ -99,20 +97,42 @@ class DataPreprocessing():
                 query += ' sensed_time > \'' + d['start'] + '\' and'
                 query += ' sensed_time < \'' + d['end'] + '\''
                 result = self.execute(query)
-                self.write_csv(result, writer)
+                self.write_csv(result, writer, 0)
 
     def execute(self, query):
         return self.db.read(query)
 
-    def write_csv(self, result, writer):
+    def write_csv(self, result, writer, status):
+        data_queue = []
         for row in result:
             loc = row[15]
+            time = row[2]
             rms_y = row[4]
-            average = self.calculate(rms_y)
-            writer.writerow([loc, rms_y, average])
 
-    def calculate(self, data):
-        return data
+            if len(data_queue) <= 10:
+                data_queue.append(rms_y)
+            else:
+                data_queue.pop(0)
+                data_queue.append(rms_y)
+                avg, sd, var = self.calculate_feature(data_queue)
+                writer.writerow([loc, rms_y, avg, sd, var, status])
+
+    def calculate_feature(self, data):
+        sum = 0
+        size = len(data)
+        for d in data:
+            sum += d
+        avg = sum / size
+
+        sum = 0
+        for d in data:
+            sum += (d - avg) ** 2
+        var = sum / size
+
+        sd = math.sqrt(var)
+
+        return avg, var, sd
+
         '''
         mysql> desc  sensor_data;
         +---------------+-------------+------+-----+---------+-------+

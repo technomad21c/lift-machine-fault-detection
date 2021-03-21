@@ -20,4 +20,6 @@ if __name__ == '__main__':
     sensorDB.connect(options.dbserver, options.database, options.username, options.password)
 
     processing = DataPreprocessing(sensorDB)
-    processing.retrieve()
+    processing.run()
+
+    
