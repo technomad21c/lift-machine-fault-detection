@@ -5,5 +5,4 @@ class MachineStatusDetector():
         self.clf = load('handling-specialty-machine-status-detection.joblib')
 
     def detect(self, data):
-        result = self.clf.predict([data])
-        print(result)
+        return self.clf.predict([data])
