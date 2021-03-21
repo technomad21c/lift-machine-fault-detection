@@ -78,7 +78,7 @@ class DataPreprocessing():
             }
         ]
 
-        with open('data.csv', 'w', newline='') as csvfile:
+        with open('data/data.csv', 'w', newline='') as csvfile:
             writer = csv.writer(csvfile, delimiter=',')
             writer.writerow(['location', 'rms_y', 'average', 'standard deviation', 'variance'])
             for d in faulty_data_index:
