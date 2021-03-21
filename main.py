@@ -1,5 +1,7 @@
 from DataPreprocessing import DataPreprocessing
 from SensorDB  import SensorDB
+from ModelTraining import ModelTraining
+from MachineStatusDetector import MachineStatusDetector
 import argparse
 import sys
 
@@ -22,4 +24,12 @@ if __name__ == '__main__':
     processing = DataPreprocessing(sensorDB)
     processing.run()
 
-    
+    model = ModelTraining()
+    model.load()
+    model.train()
+    model.save()
+
+    detector = MachineStatusDetector()
+    detector.load()
+    data = [1, 0, 0, 100.98, 84.19363636363636, 590.1159504132231, 24.29230228721072]
+    detector.detect(data)
