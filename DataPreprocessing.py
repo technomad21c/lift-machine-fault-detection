@@ -1,3 +1,5 @@
+import csv
+
 class DataPreprocessing():
     def __init__(self, db):
         self.db = db
@@ -9,8 +11,108 @@ class DataPreprocessing():
         }
 
     def retrieve(self):
-        query = 'select * from sensor_data'
+        healthy_data_index = [
+            {
+                'location': 'motorfan',
+                'sensor_id': '00:13:A2:00:41:A8:5A:7C',
+                'start': '2020-10-27 12:35:00',
+                'end': '2020-10-27 12:57:59'
+            },
+            {
+                'location': 'motorfan',
+                'sensor_id': '00:13:A2:00:41:A8:60:87',
+                'start': '2020-11-12 12:07:00',
+                'end': '2020-11-12 12:36:59'
+            },
+            {
+                'location': 'lowerbrace',
+                'sensor_id': '00:13:A2:00:41:A8:60:87',
+                'start': '2020-11-24 15:37:00',
+                'end': '2020-11-24 15:59:59'
+             },
+            {
+                'location': 'upperrockerarm',
+                'sensor_id': '00:13:A2:00:41:A8:60:87',
+                'start': '2020-11-24 12:53:00',
+                'end': '2020-11-24 13:17:59'
+            }
+        ]
 
+        faulty_data_index = [
+            {
+                'location': 'motorfan',
+                'sensor_id': '00:13:A2:00:41:A8:5C:3A',
+                'start': '2021-02-12 12:04:00',
+                'end': '2021-02-12 12:29:59'
+            },
+            {
+                'location': 'motorfan',
+                'sensor_id': '00:13:A2:00:41:A8:60:87',
+                'start': '2021-02-18 11:33:00',
+                'end': '2021-02-18 12:00:59'
+            },
+            {
+                'location': 'lowerbrace',
+                'sensor_id': '00:13:A2:00:41:A8:5C:3A',
+                'start': '2021-02-10 11:12:00',
+                'end': '2021-02-10 11:38:59'
+            },
+            {
+                'location': 'lowerbrace',
+                'sensor_id': '00:13:A2:00:41:A8:60:87',
+                'start': '2021-02-18 12:10:00',
+                'end': '2021-02-18 12:35:59'
+            },
+            {
+                'location': 'upperrockerarm',
+                'sensor_id': '00:13:A2:00:41:A8:5C:3A',
+                'start': '2021-02-10 12:14:00',
+                'end': '2021-02-10 12:40:59'
+            },
+            {
+                'location': 'upperrockerarm',
+                'sensor_id': '00:13:A2:00:41:A8:60:87',
+                'start': '2021-02-18 12:54:00',
+                'end': '2021-02-18 13:19:59'
+            }
+        ]
+
+        with open('faulty_data.csv', 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile, delimiter=',')
+            writer.writerow(['location', 'rms_y', 'average'])
+            for d in faulty_data_index:
+                query = 'select * from faulty_data where'
+                query += ' sensor_id=\'' + d['sensor_id'] + '\' and'
+                query += ' location=\'' + d['location'] + '\' and'
+                query += ' sensed_time > \'' + d['start'] + '\' and'
+                query += ' sensed_time < \'' + d['end'] + '\''
+                result = self.execute(query)
+                self.write_csv(result, writer)
+
+        with open('healthy_data.csv', 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile, delimiter=',')
+            writer.writerow(['location', 'rms_y', 'average'])
+            for d in healthy_data_index:
+                query = 'select * from healthy_data where'
+                query += ' sensor_id=\'' + d['sensor_id'] + '\' and'
+                query += ' location=\'' + d['location'] + '\' and'
+                query += ' sensed_time > \'' + d['start'] + '\' and'
+                query += ' sensed_time < \'' + d['end'] + '\''
+                result = self.execute(query)
+                self.write_csv(result, writer)
+
+    def execute(self, query):
+        return self.db.read(query)
+
+    def write_csv(self, result, writer):
+        for row in result:
+            loc = row[15]
+            rms_y = row[4]
+            average = self.calculate(rms_y)
+            writer.writerow([loc, rms_y, average])
+
+    def calculate(self, data):
+        return data
         '''
         mysql> desc  sensor_data;
         +---------------+-------------+------+-----+---------+-------+
@@ -32,9 +134,48 @@ class DataPreprocessing():
         | rssi          | int(11)     | YES  |     | NULL    |       |
         | temperature   | int(11)     | YES  |     | NULL    |       |
         +---------------+-------------+------+-----+---------+-------+
+        
+        mysql> desc healthy_data;
+        +---------------+-------------+------+-----+---------+-------+
+        | Field         | Type        | Null | Key | Default | Extra |
+        +---------------+-------------+------+-----+---------+-------+
+    0   | gateway_id    | varchar(50) | YES  |     | NULL    |       |
+    1   | sensor_id     | varchar(50) | YES  |     | NULL    |       |
+    2   | sensed_time   | datetime    | YES  |     | NULL    |       |
+    3   | rms_x         | float       | YES  |     | NULL    |       |
+    4   | rms_y         | float       | YES  |     | NULL    |       |
+    5   | rms_z         | float       | YES  |     | NULL    |       |
+    6   | max_x         | float       | YES  |     | NULL    |       |
+    7   | max_y         | float       | YES  |     | NULL    |       |
+    8   | max_z         | float       | YES  |     | NULL    |       |
+    9   | min_x         | float       | YES  |     | NULL    |       |
+    10  | min_y         | float       | YES  |     | NULL    |       |
+    11  | min_z         | float       | YES  |     | NULL    |       |
+    12  | battery_level | float       | YES  |     | NULL    |       |
+    13  | rssi          | int(11)     | YES  |     | NULL    |       |
+    14  | temperature   | int(11)     | YES  |     | NULL    |       |
+    15  | location      | varchar(40) | YES  |     | NULL    |       |
+        +---------------+-------------+------+-----+---------+-------+
+        
+        mysql> desc faulty_data;
+        +---------------+-------------+------+-----+---------+-------+
+        | Field         | Type        | Null | Key | Default | Extra |
+        +---------------+-------------+------+-----+---------+-------+
+     0  | gateway_id    | varchar(50) | YES  |     | NULL    |       |
+     1  | sensor_id     | varchar(50) | YES  |     | NULL    |       |
+     2  | sensed_time   | datetime    | YES  |     | NULL    |       |
+     3  | rms_x         | float       | YES  |     | NULL    |       |
+     4  | rms_y         | float       | YES  |     | NULL    |       |
+     5  | rms_z         | float       | YES  |     | NULL    |       |
+     6  | max_x         | float       | YES  |     | NULL    |       |
+     7  | max_y         | float       | YES  |     | NULL    |       |
+     8  | max_z         | float       | YES  |     | NULL    |       |
+     9  | min_x         | float       | YES  |     | NULL    |       |
+     10 | min_y         | float       | YES  |     | NULL    |       |
+     11 | min_z         | float       | YES  |     | NULL    |       |
+     12 | battery_level | float       | YES  |     | NULL    |       |
+     13 | rssi          | int(11)     | YES  |     | NULL    |       |
+     14 | temperature   | int(11)     | YES  |     | NULL    |       |
+     15 | location      | varchar(50) | YES  |     | NULL    |       |
+        +---------------+-------------+------+-----+---------+-------+
         '''
-        results = self.db.read(query)
-        for item in results:
-            sensor_id = item[1]
-            rms_y =  item[4]
-            print('*** Sensor ID: ' + sensor_id + ', ' + str(rms_y))
