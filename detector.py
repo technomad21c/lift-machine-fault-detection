@@ -1,5 +1,6 @@
 from MachineStatusDetector import MachineStatusDetector
 from random import randrange
+import time
 
 detector = MachineStatusDetector()
 detector.load()
@@ -23,5 +24,8 @@ data = [
     [0, 0, 1, 20.41,20.47818181818182,0.0909966942148759,0.3016565832447154]
 ]
 
-result = detector.detect(data[randrange(15)])
-print(result)
+while (True):
+    result = detector.detect(data[randrange(15)])
+    with open('result.txt', 'w') as file:
+        file.write(str(result[0]))
+    time.sleep(3)
